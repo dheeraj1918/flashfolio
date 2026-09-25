@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PyPDF2 import PdfReader
-from google import genai
+from langchain_google_genai import ChatGoogleGenerativeAI
 import requests
 import base64
 from flask import session
@@ -21,13 +21,16 @@ CORS(app,supports_credentials=True)
 gemini_api_key=os.environ.get("GEMINI_API_KEY")
 GITHUB_TOKEN=os.environ.get("GITHUB_TOKEN")
 app.secret_key = "super-secret-key-change-this"
-USERNAME="iamsai-pro"
+USERNAME=os.getenv("USERNAME")
 
 headers = {
     "Authorization": f"token {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json"
 }
-client = genai.Client(api_key=gemini_api_key)
+client = ChatGoogleGenerativeAI(
+    model="gemini-3.1-flash-lite",
+    temperature=1
+)
 
 @app.route("/upload",methods=["POST"])
 def upload_pdf():
@@ -41,11 +44,8 @@ def upload_pdf():
         return jsonify({"error":"Empty file"})
     text_data=extract_text_from_pdf(file)
     REPO_NAME=''.join(random.choices(chars, k=10))
-    response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
-            contents=text_data+prompt
-        )
-    gemini_output=response.text
+    response = client.invoke(text_data+prompt)
+    gemini_output=response.content
     
     if "```html" in gemini_output:
         html_part = gemini_output.split("```html")[1].split("```")[0]
