@@ -10,6 +10,7 @@ import string
 import os
 from dotenv import load_dotenv
 load_dotenv()
+from langchain_groq import ChatGroq
 
 
 
@@ -19,7 +20,7 @@ chars = string.ascii_letters + string.digits
 app=Flask(__name__)
 CORS(app,supports_credentials=True)
 gemini_api_key=os.environ.get("GEMINI_API_KEY")
-GITHUB_TOKEN=os.environ.get("GITHUB_TOKEN")
+
 app.secret_key = "super-secret-key-change-this"
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -28,11 +29,25 @@ headers = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json"
 }
-client = ChatGoogleGenerativeAI(
+try:
+    client = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite",
     google_api_key=gemini_api_key,
     temperature=1
-)
+  )
+    print("using Gemini Model")
+except Exception as e:
+    print(f"Gemini Model Failed")
+try:
+    api_key=os.getenv("GROQ_API_KEY")
+    client = ChatGroq(
+    model="openai/gpt-oss-20b",
+    api_key=api_key,
+    temperature=1
+  )
+    print("using GROQ model")
+except Exception as e:
+    print(f"Gemini Model Failed")
 
 @app.route("/upload", methods=["POST"])
 def upload_pdf():
